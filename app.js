@@ -17,7 +17,7 @@ function regeneratePoints(force=false){
   let arr=[];
   for(let i=1;i<=n;i++){
     let prev=old.find(p=>p.i===i)||{};
-    let distance=(n>1? w*(i-1)/(n-1):0);
+    let distance=(n>1? Math.round((w*(i-1)/(n-1))*100)/100:0);
     if(!force && prev.distance!==undefined && old.length===n && Number(state.config.width)===Number(state._lastWidth)) distance=prev.distance;
     arr.push({i,distance,depth:prev.depth??'',r1:prev.r1??'',t1:prev.t1??'',r2:prev.r2??'',t2:prev.t2??''});
   }
@@ -49,7 +49,7 @@ function bindConfig(){
   Object.entries(map).forEach(([k,s])=>{const el=$(s); el.value=state.config[k]; el.onchange=()=>{state.config[k]=el.type==='number'&&k==='observations'?Number(el.value):el.value; regeneratePoints(k==='width'||k==='observations'||k==='section'); renderAll();saveLocal();};});
   $('#calSheet').textContent=MOLINETE_META[state.config.serial]?.sheet||'';
   $('#pointCount').textContent=totalPoints();
-  $('#spacing').textContent=state.config.width?fmt(Number(state.config.width)/(totalPoints()-1),3)+' m':'—';
+  $('#spacing').textContent=state.config.width?fmt(Number(state.config.width)/(totalPoints()-1),2)+' m':'—';
 }
 function renderCapture(){
   const box=$('#pointList'); box.innerHTML='';
@@ -57,9 +57,9 @@ function renderCapture(){
     const c=pointCalc(idx), measure=c.measure, endpoint=idx===0||idx===state.points.length-1;
     const d=document.createElement('section'); d.className='card point-card';
     const depthDisabled=state.config.section==='Trapezoidal'&&endpoint;
-    d.innerHTML=`<div class="point-title"><h3>Punto ${p.i} · ${fmt(Number(p.distance),3)} m</h3><span class="badge ${measure?'measure':'depth'}">${measure?'MOLINETE':'SONDEO'}</span></div>
+    d.innerHTML=`<div class="point-title"><h3>Punto ${p.i} · ${fmt(Number(p.distance),2)} m</h3><span class="badge ${measure?'measure':'depth'}">${measure?'MOLINETE':'SONDEO'}</span></div>
       <div class="grid3">
-       <div><label>Distancia desde origen (m)</label><input class="input p-distance" type="number" step="0.001" value="${p.distance}" ${endpoint?'readonly':''}></div>
+       <div><label>Distancia desde origen (m)</label><input class="input p-distance" type="number" step="0.01" value="${p.distance}" ${endpoint?'readonly':''}></div>
        <div><label>Profundidad (m)</label><input class="input p-depth" type="number" min="0" step="0.001" value="${p.depth}" ${depthDisabled?'disabled':''}></div>
        <div><label>Profundidad efectiva</label><input class="auto" disabled value="${fmt(c.effectiveDepth)}"></div>
       </div>
@@ -88,7 +88,7 @@ function renderResults(){
   const t=totals(); $('#qTotal').textContent=fmt(t.q); $('#lpsTotal').textContent=fmt(t.lps,1); $('#areaTotal').textContent=fmt(t.area); $('#vAvg').textContent=t.vavg!==null?fmt(t.vavg):'—';
   $('#completion').textContent=`${t.complete} de ${state.config.observations} secciones con caudal calculado`;
   const tbody=$('#resultsBody');tbody.innerHTML='';
-  state.points.forEach((p,i)=>{const c=pointCalc(i);if(!c.measure)return;const tr=document.createElement('tr');tr.innerHTML=`<td>${p.i}</td><td>${fmt(Number(p.distance))}</td><td>${fmt(c.effectiveDepth)}</td><td>${c.v1!==null?fmt(c.v1):''}</td><td>${c.v2!==null?fmt(c.v2):''}</td><td>${c.vmean!==null?fmt(c.vmean):''}</td><td>${c.sectionWidth!==null?fmt(c.sectionWidth):''}</td><td>${c.depthMean!==null?fmt(c.depthMean):''}</td><td>${c.area!==null?fmt(c.area):''}</td><td>${c.q!==null?fmt(c.q):''}</td>`;tbody.appendChild(tr);});
+  state.points.forEach((p,i)=>{const c=pointCalc(i);if(!c.measure)return;const tr=document.createElement('tr');tr.innerHTML=`<td>${p.i}</td><td>${fmt(Number(p.distance),2)}</td><td>${fmt(c.effectiveDepth)}</td><td>${c.v1!==null?fmt(c.v1):''}</td><td>${c.v2!==null?fmt(c.v2):''}</td><td>${c.vmean!==null?fmt(c.vmean):''}</td><td>${c.sectionWidth!==null?fmt(c.sectionWidth):''}</td><td>${c.depthMean!==null?fmt(c.depthMean):''}</td><td>${c.area!==null?fmt(c.area):''}</td><td>${c.q!==null?fmt(c.q):''}</td>`;tbody.appendChild(tr);});
 }
 function renderCalTable(){
   const serial=$('#tableSerial').value||state.config.serial, susp=$('#tableSusp').value||state.config.suspension; const b=CALIBRATIONS[serial][susp];

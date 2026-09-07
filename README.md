@@ -19,3 +19,7 @@ Al abrirla una vez desde una URL HTTPS, el service worker guarda los archivos b�
 2. Captura: todos los puntos llevan profundidad; los pares 2,4,6... llevan revoluciones/tiempo.
 3. Cálculo: anchura = distancia del impar siguiente - impar anterior; profundidad media = (Dant + 2·Dpar + Dsig)/4; área = anchura × profundidad media; Q = área × velocidad.
 4. Resultados: m³/s, L/s, área, velocidad media, CSV y PDF mediante impresión del navegador.
+
+
+## Versión 3
+Las distancias de los puntos se generan y almacenan redondeadas a 2 decimales (0.01 m). Los cálculos de anchura de sección usan esas distancias redondeadas.

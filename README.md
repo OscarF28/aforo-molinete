@@ -23,3 +23,7 @@ Al abrirla una vez desde una URL HTTPS, el service worker guarda los archivos b�
 
 ## Versión 3
 Las distancias de los puntos se generan y almacenan redondeadas a 2 decimales (0.01 m). Los cálculos de anchura de sección usan esas distancias redondeadas.
+
+
+## Corrección v4
+Las distancias generadas, las distancias recuperadas del almacenamiento local y las distancias editadas manualmente se normalizan a 2 decimales. La interfaz las muestra siempre con dos cifras decimales y los cálculos usan esos valores redondeados. Se actualizó la caché PWA a `aforo-v4-redondeo-corregido`.

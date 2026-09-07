@@ -5,6 +5,7 @@ const REV_DEFAULT=[1,2,3,4,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100,150,200,
 let state={config:{site:'',date:new Date().toISOString().slice(0,10),width:'',section:'Trapezoidal',observations:5,method:'0.6',serial:'73359',suspension:'Varilla'},points:[]};
 
 function fmt(x,n=3){return Number.isFinite(x)?x.toFixed(n):''}
+function round2(x){const n=Number(x);return Number.isFinite(n)?Math.round((n+Number.EPSILON)*100)/100:0}
 function exactVelocity(serial,suspension,time,rev){
   const s=CALIBRATIONS[String(serial)]; if(!s)return null;
   const block=s[suspension]; if(!block)return null;
@@ -17,8 +18,9 @@ function regeneratePoints(force=false){
   let arr=[];
   for(let i=1;i<=n;i++){
     let prev=old.find(p=>p.i===i)||{};
-    let distance=(n>1? Math.round((w*(i-1)/(n-1))*100)/100:0);
-    if(!force && prev.distance!==undefined && old.length===n && Number(state.config.width)===Number(state._lastWidth)) distance=prev.distance;
+    let distance=(n>1? round2(w*(i-1)/(n-1)):0);
+    // Si se conservan puntos de una versión anterior, también se normalizan a 2 decimales.
+    if(!force && prev.distance!==undefined && old.length===n && Number(state.config.width)===Number(state._lastWidth)) distance=round2(prev.distance);
     arr.push({i,distance,depth:prev.depth??'',r1:prev.r1??'',t1:prev.t1??'',r2:prev.r2??'',t2:prev.t2??''});
   }
   if(state.config.section==='Trapezoidal' && arr.length){arr[0].depth=0;arr[arr.length-1].depth=0;}
@@ -59,7 +61,7 @@ function renderCapture(){
     const depthDisabled=state.config.section==='Trapezoidal'&&endpoint;
     d.innerHTML=`<div class="point-title"><h3>Punto ${p.i} · ${fmt(Number(p.distance),2)} m</h3><span class="badge ${measure?'measure':'depth'}">${measure?'MOLINETE':'SONDEO'}</span></div>
       <div class="grid3">
-       <div><label>Distancia desde origen (m)</label><input class="input p-distance" type="number" step="0.01" value="${p.distance}" ${endpoint?'readonly':''}></div>
+       <div><label>Distancia desde origen (m)</label><input class="input p-distance" type="number" step="0.01" value="${fmt(Number(p.distance),2)}" ${endpoint?'readonly':''}></div>
        <div><label>Profundidad (m)</label><input class="input p-depth" type="number" min="0" step="0.001" value="${p.depth}" ${depthDisabled?'disabled':''}></div>
        <div><label>Profundidad efectiva</label><input class="auto" disabled value="${fmt(c.effectiveDepth)}"></div>
       </div>
@@ -79,7 +81,11 @@ function renderCapture(){
       // Mientras se escribe, conserva el foco y el teclado numérico abierto.
       el.oninput=()=>{p[key]=el.value; saveLocal();};
       // Al terminar el dato, actualiza velocidades, secciones y resultados.
-      el.onchange=()=>{p[key]=el.value; renderCapture(); renderResults(); saveLocal();};
+      el.onchange=()=>{
+        if(key==='distance'){p[key]=round2(el.value);el.value=fmt(Number(p[key]),2);}
+        else p[key]=el.value;
+        renderCapture(); renderResults(); saveLocal();
+      };
     };
     set('.p-distance','distance'); set('.p-depth','depth'); set('.p-r1','r1'); set('.p-t1','t1'); set('.p-r2','r2'); set('.p-t2','t2');
   });
@@ -98,7 +104,11 @@ function renderCalTable(){
 }
 function renderAll(){regeneratePoints(false);bindConfig();renderCapture();renderResults(); $('#tableSerial').value=state.config.serial;$('#tableSusp').value=state.config.suspension;renderCalTable();}
 function saveLocal(){localStorage.setItem('aforoMolineteState',JSON.stringify(state));$('#saveMsg').textContent='Guardado en este dispositivo';setTimeout(()=>$('#saveMsg').textContent='',1200)}
-function loadLocal(){try{const x=JSON.parse(localStorage.getItem('aforoMolineteState'));if(x&&x.config){state=x;return true}}catch(e){}return false}
+function loadLocal(){try{const x=JSON.parse(localStorage.getItem('aforoMolineteState'));if(x&&x.config){state=x;
+  // Migración: corrige distancias guardadas por versiones anteriores.
+  if(Array.isArray(state.points)) state.points.forEach(p=>{p.distance=round2(p.distance)});
+  if(state._lastWidth!==undefined) state._lastWidth=state.config.width;
+  return true}}catch(e){}return false}
 function newAforo(){if(!confirm('¿Crear un aforo nuevo? Se limpiarán los datos de captura actuales.'))return;state={config:{site:'',date:new Date().toISOString().slice(0,10),width:'',section:'Trapezoidal',observations:5,method:'0.6',serial:'73359',suspension:'Varilla'},points:[]};regeneratePoints(true);renderAll();saveLocal();}
 function exportCSV(){let rows=[['Punto','Distancia_m','Profundidad_m','Rev1','Tiempo1_s','Vel1_m_s','Rev2','Tiempo2_s','Vel2_m_s','VelMedia_m_s','Anchura_m','ProfMedia_m','Area_m2','Q_m3_s']];state.points.forEach((p,i)=>{const c=pointCalc(i);if(c.measure)rows.push([p.i,p.distance,c.effectiveDepth,p.r1,p.t1,c.v1??'',p.r2,p.t2,c.v2??'',c.vmean??'',c.sectionWidth??'',c.depthMean??'',c.area??'',c.q??''])});const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`aforo_${(state.config.site||'canal').replace(/[^a-z0-9_-]+/gi,'_')}_${state.config.date}.csv`;a.click();URL.revokeObjectURL(a.href)}
 function showView(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));scrollTo({top:0,behavior:'smooth'});}

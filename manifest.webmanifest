@@ -1,0 +1,15 @@
+{
+  "name": "Aforo con Molinete",
+  "short_name": "Aforo Molinete",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f6f7",
+  "theme_color": "#174a5b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

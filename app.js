@@ -73,7 +73,14 @@ function renderCapture(){
       <div class="grid3" style="margin-top:10px"><div><label>Anchura sección (m)</label><input class="auto" disabled value="${c.sectionWidth!==null?fmt(c.sectionWidth):''}"></div><div><label>Profundidad media (m)</label><input class="auto" disabled value="${c.depthMean!==null?fmt(c.depthMean):''}"></div><div><label>Q parcial (m³/s)</label><input class="auto" disabled value="${c.q!==null?fmt(c.q):''}"></div></div>
       <div class="${(p.r1&&p.t1&&c.v1===null)||(state.config.method==='0.2-0.8'&&p.r2&&p.t2&&c.v2===null)?'status bad':'hidden'}">La combinación de revoluciones/tiempo no existe en la tabla exacta seleccionada.</div>`:''}`;
     box.appendChild(d);
-    const set=(sel,key)=>{const el=$(sel,d);if(el)el.oninput=()=>{p[key]=el.value;renderCapture();renderResults();saveLocal();};};
+    const set=(sel,key)=>{
+      const el=$(sel,d);
+      if(!el)return;
+      // Mientras se escribe, conserva el foco y el teclado numérico abierto.
+      el.oninput=()=>{p[key]=el.value; saveLocal();};
+      // Al terminar el dato, actualiza velocidades, secciones y resultados.
+      el.onchange=()=>{p[key]=el.value; renderCapture(); renderResults(); saveLocal();};
+    };
     set('.p-distance','distance'); set('.p-depth','depth'); set('.p-r1','r1'); set('.p-t1','t1'); set('.p-r2','r2'); set('.p-t2','t2');
   });
 }
@@ -101,5 +108,4 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('#saveBtn').onclick=saveLocal;$('#newBtn').onclick=newAforo;$('#csvBtn').onclick=exportCSV;$('#printBtn').onclick=()=>{showView('resultados');setTimeout(()=>print(),100)};
   $('#tableSerial').onchange=renderCalTable;$('#tableSusp').onchange=renderCalTable;
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  // Automatic consistency check against the user's source table.
 });

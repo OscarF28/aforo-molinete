@@ -90,11 +90,36 @@ function renderCapture(){
     set('.p-distance','distance'); set('.p-depth','depth'); set('.p-r1','r1'); set('.p-t1','t1'); set('.p-r2','r2'); set('.p-t2','t2');
   });
 }
+
+function renderProfile(){
+  const box=$('#profileChart'), hint=$('#profileHint'); if(!box)return;
+  const pts=state.points.map(p=>({i:p.i,x:Number(p.distance),d:Number(p.depth)}))
+    .filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.d)&&p.d>=0).sort((a,b)=>a.x-b.x);
+  const cw=Number(state.config.width);
+  const width=Number.isFinite(cw)&&cw>0?cw:(pts.length?Math.max(...pts.map(p=>p.x)):0);
+  const maxDepth=pts.length?Math.max(...pts.map(p=>p.d)):0;
+  if(pts.length<2||width<=0||maxDepth<=0){
+    box.innerHTML='<div class="profile-empty">Capture el ancho del espejo y las profundidades para generar el perfil transversal.</div>';
+    if(hint)hint.textContent=''; return;
+  }
+  const W=900,H=440,L=72,R=28,T=48,B=66,plotW=W-L-R,plotH=H-T-B;
+  const yMax=Math.max(.25,maxDepth*1.15), sx=x=>L+(x/width)*plotW, sy=d=>T+(d/yMax)*plotH;
+  const linePts=pts.map(p=>`${sx(p.x).toFixed(1)},${sy(p.d).toFixed(1)}`).join(' ');
+  const areaPath=`M ${sx(pts[0].x).toFixed(1)} ${T} `+pts.map(p=>`L ${sx(p.x).toFixed(1)} ${sy(p.d).toFixed(1)}`).join(' ')+` L ${sx(pts[pts.length-1].x).toFixed(1)} ${T} Z`;
+  let grid='',labels='';
+  for(let k=0;k<=5;k++){const val=width*k/5,x=sx(val);grid+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${H-B}" class="profile-grid"/>`;labels+=`<text x="${x}" y="${H-B+27}" text-anchor="middle" class="profile-axis-text">${fmt(val,2)}</text>`;}
+  for(let k=0;k<=5;k++){const val=yMax*k/5,y=sy(val);grid+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" class="profile-grid"/>`;labels+=`<text x="${L-12}" y="${y+4}" text-anchor="end" class="profile-axis-text">${fmt(val,2)}</text>`;}
+  const pe=pts.map(p=>{const tx=Math.min(Math.max(sx(p.x),L+82),W-R-82),ty=Math.max(sy(p.d)-61,T+5);return `<g class="profile-point" tabindex="0"><circle cx="${sx(p.x)}" cy="${sy(p.d)}" r="6"/><title>Punto ${p.i} · Distancia ${fmt(p.x,2)} m · Profundidad ${fmt(p.d,3)} m</title><g class="profile-tooltip"><rect x="${tx-82}" y="${ty}" width="164" height="44" rx="7"/><text x="${tx}" y="${ty+18}" text-anchor="middle">Punto ${p.i}</text><text x="${tx}" y="${ty+35}" text-anchor="middle">x ${fmt(p.x,2)} m · D ${fmt(p.d,3)} m</text></g></g>`}).join('');
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" class="profile-svg"><line x1="${L}" y1="${T}" x2="${W-R}" y2="${T}" class="water-line"/>${grid}<path d="${areaPath}" class="water-area"/><polyline points="${linePts}" class="bed-line"/>${pe}${labels}<text x="${L+plotW/2}" y="${H-15}" text-anchor="middle" class="profile-axis-title">Distancia desde origen (m) · Ancho del espejo: ${fmt(width,2)} m</text><text transform="translate(20 ${T+plotH/2}) rotate(-90)" text-anchor="middle" class="profile-axis-title">Profundidad (m)</text></svg>`;
+  if(hint)hint.textContent=`Profundidad máxima medida: ${fmt(maxDepth,3)} m · ${pts.length} puntos representados. Pase el cursor o toque un punto para consultar distancia y profundidad.`;
+}
+
 function renderResults(){
   const t=totals(); $('#qTotal').textContent=fmt(t.q); $('#lpsTotal').textContent=fmt(t.lps,1); $('#areaTotal').textContent=fmt(t.area); $('#vAvg').textContent=t.vavg!==null?fmt(t.vavg):'—';
   $('#completion').textContent=`${t.complete} de ${state.config.observations} secciones con caudal calculado`;
   const tbody=$('#resultsBody');tbody.innerHTML='';
   state.points.forEach((p,i)=>{const c=pointCalc(i);if(!c.measure)return;const tr=document.createElement('tr');tr.innerHTML=`<td>${p.i}</td><td>${fmt(Number(p.distance),2)}</td><td>${fmt(c.effectiveDepth)}</td><td>${c.v1!==null?fmt(c.v1):''}</td><td>${c.v2!==null?fmt(c.v2):''}</td><td>${c.vmean!==null?fmt(c.vmean):''}</td><td>${c.sectionWidth!==null?fmt(c.sectionWidth):''}</td><td>${c.depthMean!==null?fmt(c.depthMean):''}</td><td>${c.area!==null?fmt(c.area):''}</td><td>${c.q!==null?fmt(c.q):''}</td>`;tbody.appendChild(tr);});
+  renderProfile();
 }
 function renderCalTable(){
   const serial=$('#tableSerial').value||state.config.serial, susp=$('#tableSusp').value||state.config.suspension; const b=CALIBRATIONS[serial][susp];

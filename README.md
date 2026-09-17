@@ -27,3 +27,7 @@ Las distancias de los puntos se generan y almacenan redondeadas a 2 decimales (0
 
 ## Corrección v4
 Las distancias generadas, las distancias recuperadas del almacenamiento local y las distancias editadas manualmente se normalizan a 2 decimales. La interfaz las muestra siempre con dos cifras decimales y los cálculos usan esos valores redondeados. Se actualizó la caché PWA a `aforo-v4-redondeo-corregido`.
+
+
+## Versión 5 — perfil transversal dinámico
+En Resultados se genera automáticamente un perfil transversal SVG con las distancias y profundidades de cada aforo. Los puntos son interactivos y la gráfica se incluye al imprimir/guardar PDF. No requiere conexión ni librerías externas.
